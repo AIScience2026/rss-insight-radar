@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>创新洞察雷达 · RSS Insight Radar</title>
+<meta name="description" content="A self-contained RSS intelligence dashboard — 3,210 items from 33 direct-feed sources, with insight scoring and full-text search.">
+<style>
+  /* ===== 独立页面模式：自带设计令牌，不依赖任何宿主环境 ===== */
+  :root{
+    color-scheme: light dark;
+
+    --font-sans: system-ui, -apple-system, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Menlo, Consolas, monospace;
+
+    --background: #ffffff;
+    --foreground: #0b0d12;
+    --muted-foreground: #6b7280;
+    --card: #f7f8fa;
+    --border: #e3e6ea;
+    --accent: #2563eb;
+    --accent-foreground: #ffffff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --background: #0b0d12;
+      --foreground: #e8eaed;
+      --muted-foreground: #9aa2ae;
+      --card: #161a21;
+      --border: #262c36;
+      --accent: #5b9cff;
+      --accent-foreground: #0b0d12;
+    }
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    padding:0;
+    font-family:var(--font-sans);
+    color:var(--foreground);
+    background:var(--background);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1240px;margin:0 auto;padding:32px 24px 72px}
+
+  /* ===== 页头 ===== */
+  header.hero{margin-bottom:26px;padding-bottom:22px;border-bottom:1px solid var(--border)}
+  h1{font-size:23px;margin:0 0 8px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  h1 .ver{
+    font-size:11.5px;font-weight:600;color:var(--accent);
+    border:1px solid var(--accent);border-radius:99px;padding:2px 9px;letter-spacing:.02em;
+  }
+  .tagline{color:var(--muted-foreground);font-size:13.5px;margin:0 0 16px;max-width:78ch;line-height:1.65}
+  .meta{
+    display:flex;gap:8px 22px;flex-wrap:wrap;
+    font-family:var(--font-mono);font-size:11.5px;color:var(--muted-foreground);
+  }
+  .meta b{color:var(--foreground);font-weight:600}
+
+  /* ===== 统计卡片 ===== */
+  .stats{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0 0}
+  .stat{
+    flex:1 1 150px;border:1px solid var(--border);border-radius:10px;
+    padding:11px 14px;background:var(--card);min-width:0;
+  }
+  .stat b{display:block;font-size:22px;font-variant-numeric:tabular-nums;line-height:1.2}
+  .stat span{font-size:11px;color:var(--muted-foreground)}
+
+  /* ===== 工具栏 ===== */
+  .bar{
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+    margin:22px 0 16px;padding:14px;
+    border:1px solid var(--border);border-radius:10px;background:var(--card);
+    position:sticky;top:0;z-index:20;backdrop-filter:blur(8px);
+  }
+  .bar input[type=search], .bar select{
+    font-family:inherit;font-size:13px;padding:7px 11px;
+    border:1px solid var(--border);border-radius:7px;
+    background:var(--background);color:var(--foreground);
+  }
+  .bar input[type=search]{flex:1 1 260px;min-width:200px}
+  .bar input[type=search]:focus-visible, .bar select:focus-visible{
+    outline:2px solid var(--accent);outline-offset:1px;
+  }
+  .bar label{font-size:12px;color:var(--muted-foreground);display:flex;align-items:center;gap:6px}
+  .bar .hint{font-size:11.5px;color:var(--muted-foreground);margin-left:auto;font-family:var(--font-mono)}
+
+  /* ===== 分类条 ===== */
+  .cats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+  .cats button{
+    font-family:inherit;font-size:12px;padding:5px 12px;cursor:pointer;
+    border:1px solid var(--border);border-radius:99px;
+    background:var(--background);color:var(--muted-foreground);transition:.14s;
+  }
+  .cats button:hover{border-color:var(--accent);color:var(--accent)}
+  .cats button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-foreground);font-weight:600}
+
+  /* ===== 列表 ===== */
+  #list{display:flex;flex-direction:column;gap:1px}
+  .it{
+    display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:baseline;
+    padding:11px 12px;border-radius:8px;border-bottom:1px solid var(--border);
+  }
+  .it:hover{background:var(--card)}
+  .sc{
+    font-family:var(--font-mono);font-size:12px;font-weight:700;text-align:right;
+    color:var(--accent);font-variant-numeric:tabular-nums;
+  }
+  .sc.lo{color:var(--muted-foreground);font-weight:500}
+  .tt{font-size:13.5px;line-height:1.5;min-width:0}
+  .tt a{color:var(--foreground);text-decoration:none;border-bottom:1px solid transparent}
+  .tt a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+  .src{font-size:11.5px;color:var(--muted-foreground);margin-top:3px;font-family:var(--font-mono)}
+  .sum{
+    font-size:12.5px;color:var(--muted-foreground);margin-top:5px;
+    line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  .dt{font-size:11px;color:var(--muted-foreground);font-family:var(--font-mono);white-space:nowrap}
+  .tag{
+    display:inline-block;font-size:10.5px;padding:1px 7px;margin-left:6px;
+    border:1px solid var(--border);border-radius:99px;color:var(--muted-foreground);
+  }
+  mark{background:var(--accent);color:var(--accent-foreground);border-radius:2px;padding:0 2px}
+
+  /* ===== 页脚 ===== */
+  footer{
+    margin-top:44px;padding-top:20px;border-top:1px solid var(--border);
+    font-size:12px;color:var(--muted-foreground);line-height:1.75;
+  }
+  footer b{color:var(--foreground)}
+  footer a{color:var(--accent)}
+  .more{
+    text-align:center;padding:22px;color:var(--muted-foreground);font-size:12.5px;
+    font-family:var(--font-mono);
+  }
+  .more button{
+    font-family:inherit;font-size:12.5px;padding:8px 20px;margin:0 6px;cursor:pointer;
+    border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--foreground);
+  }
+  .more button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  .more button:disabled{opacity:.4;cursor:default}
+
+  @media (max-width:640px){
+    .wrap{padding:20px 14px 56px}
+    .it{grid-template-columns:44px 1fr;gap:9px}
+    .dt{grid-column:2;font-size:10.5px}
+    .sum{display:none}
+    .bar{position:static}
+  }
+  @media print{
+    .bar,.cats,.more,footer{display:none}
+    .it{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>📡 创新洞察雷达 <span class="ver">v1.0</span></h1>
+    <p class="tagline">
+      一个自包含的 RSS 情报仪表盘。直接连接 33 个一手信源，抓取后按洞察评分排序，
+      全部数据内联于单个 HTML 文件中——无需后端、无需构建、无外部请求。
+    </p>
+    <div class="meta" id="meta"></div>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <div class="bar">
+    <input type="search" id="q" placeholder="搜索标题 / 摘要 / 信源…" aria-label="搜索">
+    <label>评分 ≥ <input type="number" id="min" value="0" min="0" max="12" step="0.5"
+           style="width:58px;font-family:inherit;font-size:13px;padding:7px 8px;
+                  border:1px solid var(--border);border-radius:7px;
+                  background:var(--background);color:var(--foreground)" aria-label="最低评分"></label>
+    <select id="cat" aria-label="分类"><option value="">全部分类</option></select>
+    <span class="hint" id="hint"></span>
+  </div>
+
+  <div class="cats" id="cats"></div>
+  <div id="list"></div>
+  <div class="more" id="more"></div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script id="payload" type="application/json">__DATA__</script>
+<script>
+(function(){
+  "use strict";
+  var DATA = JSON.parse(document.getElementById("payload").textContent);
+  var ITEMS = DATA.items || DATA;
+  var cats = DATA.categories || [];
+  var generated = DATA.generated || "";
+  var scores = DATA.scores || {};
+
+  var PAGE = 120, shown = PAGE, from = 0, view = ITEMS;
+  var $ = function(id){ return document.getElementById(id); };
+  var esc = function(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  };
+  var fmtDate = function(s){
+    if(!s) return "—";
+    return String(s).slice(0,10);
+  };
+
+  /* ---- 页头元信息 ---- */
+  var srcs = {};
+  ITEMS.forEach(function(it){ if(it.src) srcs[it.src] = 1; });
+  var nSrc = Object.keys(srcs).length;
+
+  var dmin = "—", dmax = "—";
+  ITEMS.forEach(function(it){
+    var d = fmtDate(it.published || it.date);
+    if(d === "—") return;
+    if(dmin === "—" || d < dmin) dmin = d;
+    if(d > dmax) dmax = d;
+  });
+
+  $("meta").innerHTML =
+    '<span>条目 <b>' + ITEMS.length + '</b></span>' +
+    '<span>信源 <b>' + nSrc + '</b></span>' +
+    '<span>分类 <b>' + cats.length + '</b></span>' +
+    '<span>内容跨度 <b>' + dmin + ' → ' + dmax + '</b></span>' +
+    (generated ? '<span>生成于 <b>' + esc(generated) + '</b></span>' : '');
+
+  var top = ITEMS.filter(function(it){ return (it.score||0) >= 8; }).length;
+  var good = ITEMS.filter(function(it){ return (it.score||0) >= 2.5; }).length;
+
+  $("stats").innerHTML = [
+    [ITEMS.length, "总条目"],
+    [nSrc, "活跃信源"],
+    [top, "高分 (≥8)"],
+    [good, "值得看 (≥2.5)"]
+  ].map(function(p){
+    return '<div class="stat"><b>' + p[0] + '</b><span>' + p[1] + '</span></div>';
+  }).join("");
+
+  /* ---- 分类筛选 ---- */
+  var sel = $("cat");
+  cats.forEach(function(c){
+    var o = document.createElement("option");
+    o.value = c; o.textContent = c; sel.appendChild(o);
+  });
+  $("cats").innerHTML = ['<button class="on" data-c="">全部</button>'].concat(
+    cats.map(function(c){ return '<button data-c="' + esc(c) + '">' + esc(c) + '</button>'; })
+  ).join("");
+
+  /* ---- 关键词高亮 ---- */
+  var kw = "";
+  function hi(t){
+    var s = esc(t);
+    if(!kw) return s;
+    try{
+      var re = new RegExp("(" + kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi");
+      return s.replace(re, "<mark>$1</mark>");
+    }catch(e){ return s; }
+  }
+
+  /* ---- 单条渲染 ---- */
+  function row(it){
+    var sc = Math.round((it.score || 0) * 10) / 10;
+    return '<div class="it">' +
+      '<div class="sc' + (sc < 2.5 ? " lo" : "") + '">' + sc.toFixed(1) + '</div>' +
+      '<div class="tt">' +
+        '<a href="' + esc(it.link || "#") + '" target="_blank" rel="noopener noreferrer">' +
+          hi(it.title) + '</a>' +
+        (it.tags ? '<span class="tag">' + esc(it.tags) + '</span>' : '') +
+        '<div class="src">' + hi(it.src || "") +
+          (it.cat ? ' · ' + esc(it.cat) : '') + '</div>' +
+        (it.sum ? '<div class="sum">' + hi(it.sum) + '</div>' : '') +
+      '</div>' +
+      '<div class="dt">' + esc(fmtDate(it.published)) + '</div>' +
+    '</div>';
+  }
+
+  /* ---- 渲染（增量追加，避免大列表一次性重排） ---- */
+  function paint(){
+    var end = Math.min(shown, view.length);
+    var html = [];
+    for(var i = from; i < end; i++) html.push(row(view[i]));
+    if(from === 0) $("list").innerHTML = html.join("");
+    else $("list").insertAdjacentHTML("beforeend", html.join(""));
+    from = end;
+    $("hint").textContent = "显示 " + from + " / " + view.length;
+    renderMore();
+  }
+
+  function renderMore(){
+    if(from >= view.length){ $("more").innerHTML = ""; return; }
+    $("more").innerHTML =
+      '<button id="lm">加载更多（还有 ' + (view.length - from) + ' 条）</button>' +
+      '<button id="la">全部显示</button>';
+    $("lm").onclick = function(){ shown = view.length; paint(); };
+    $("la").onclick = function(){ shown = from + PAGE; paint(); };
+  }
+
+  /* ---- 筛选逻辑 ---- */
+  var activeCat = "";
+  function apply(){
+    var q = $("q").value.trim().toLowerCase();
+    var mn = parseFloat($("min").value);
+    if(isNaN(mn)) mn = 0;
+    kw = $("q").value.trim();
+    view = ITEMS.filter(function(it){
+      if(activeCat && it.cat !== activeCat) return false;
+      if((it.score || 0) < mn) return false;
+      if(q){
+        var hay = ((it.title||"") + " " + (it.sum||"") + " " + (it.src||"")).toLowerCase();
+        if(hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+    view.sort(function(a,b){ return (b.score||0) - (a.score||0); });
+    from = 0; shown = PAGE; paint();
+  }
+
+  var t;
+  function debounce(fn, ms){ return function(){ clearTimeout(t); t = setTimeout(fn, ms); }; }
+  $("q").addEventListener("input", debounce(apply, 180));
+  $("min").addEventListener("input", debounce(apply, 180));
+  $("cat").addEventListener("change", function(){ activeCat = this.value; apply(); });
+  $("cats").addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    activeCat = b.dataset.c;
+    Array.prototype.forEach.call($("cats").children, function(x){ x.classList.toggle("on", x === b); });
+    $("cat").value = activeCat;
+    apply();
+  });
+
+  /* ---- 页脚 ---- */
+  $("foot").innerHTML =
+    '<b>数据说明：</b>共 ' + ITEMS.length + ' 条，来自 ' + nSrc +
+    ' 个直连 RSS/Atom 信源，按「洞察评分」排序（评分由关键词启发式计算，非模型判断）。' +
+    '<br><b>隐私说明：</b>本页为纯静态文件，不含任何追踪代码、Cookie、外部字体或分析脚本；' +
+    '所有条目内容均为公开信源引用，版权归原作者与出版方所有。' +
+    '<br><b>使用说明：</b>数据内联于本文件中，离线可用；点击标题跳转原文。' +
+    '<br><span style="opacity:.75">Generated ' + esc(generated) + ' · Insight Radar v1.0</span>';
+
+  apply();
+})();
+</script>
+</body>
+</html>

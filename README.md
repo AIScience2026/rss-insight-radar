@@ -91,5 +91,3 @@ HTML 元素用 `data-i18n="key"`（文本）或 `data-i18n-ph="key"`（placehold
 - 摘要统一截断至 300 字符
 - 条目内容版权归原作者与出版方所有，本页仅为索引，点击标题跳转原文
 - 代码部分 MIT
-
-<!-- probe marker -->
